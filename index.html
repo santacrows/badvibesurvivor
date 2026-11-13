@@ -482,7 +482,12 @@ function update(dt) {
   const S = CFG.spawn, pr = pRad();
   let dx = (K.KeyD || K.ArrowRight ? 1 : 0) - (K.KeyA || K.ArrowLeft ? 1 : 0);
   let dy = (K.KeyS || K.ArrowDown ? 1 : 0) - (K.KeyW || K.ArrowUp ? 1 : 0);
-  if (stick) { dx += (stick.x - stick.ox) / 50; dy += (stick.y - stick.oy) / 50; }
+  
+  if (stick) { 
+      dx += (stick.x - W / 2); 
+      dy += (stick.y - H / 2); 
+  }
+  
   const m = Math.hypot(dx, dy); if (m > 1) { dx /= m; dy /= m; }
   pl.moving = m > .1; if (pl.moving) pl.face = Math.atan2(dy, dx);
   pl.x += dx * P.speed * dt; pl.y += dy * P.speed * dt; collide(pl, pRad());
@@ -675,13 +680,6 @@ function draw() {
   ctx.textAlign = 'left'; ctx.fillText('LV ' + pl.level + '   HP ' + Math.ceil(Math.max(0, pl.hp)) + '/' + P.maxHp, 10, 16);
   ctx.textAlign = 'center'; ctx.fillText(fmt(t), W / 2, 16);
   ctx.textAlign = 'right'; ctx.fillText(kills + ' kills', W - 10, 16);
-  if (stick) {
-    const vx = stick.x - stick.ox, vy = stick.y - stick.oy, d = Math.min(50, Math.hypot(vx, vy)), a = Math.atan2(vy, vx);
-    ctx.globalAlpha = .3; ctx.strokeStyle = C['--fg']; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(stick.ox, stick.oy, 50, 0, TAU); ctx.stroke();
-    ctx.fillStyle = C['--fg']; poly(stick.ox + Math.cos(a) * d, stick.oy + Math.sin(a) * d, 16, 0);
-    ctx.globalAlpha = 1;
-  }
 }
 
 /* ============ input & loop ============ */
@@ -698,9 +696,10 @@ addEventListener('keydown', e => {
 addEventListener('keyup', e => K[e.code] = 0);
 addEventListener('blur', () => { if (state === 'play') togglePause(); });
 const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+
 cv.addEventListener('pointerdown', e => {
   if (state !== 'play' || stick) return;
-  const [x, y] = pos(e); stick = { id: e.pointerId, ox: x, oy: y, x, y }; cv.setPointerCapture(e.pointerId);
+  const [x, y] = pos(e); stick = { id: e.pointerId, x, y }; cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener('pointermove', e => { if (stick && e.pointerId === stick.id) [stick.x, stick.y] = pos(e); });
 const endStick = e => { if (stick && e.pointerId === stick.id) stick = null; };
