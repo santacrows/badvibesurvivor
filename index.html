@@ -118,6 +118,28 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .card-icon { width: 28px; height: 28px; }
   .card span { font-size: 11px; }
 }
+
+/* Shape Gallery Showcase Grid */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+  gap: 10px;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 6px;
+  margin-top: 10px;
+}
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--bg);
+  border: 1px solid var(--obstacle);
+  border-radius: 12px;
+  padding: 10px 4px;
+}
+.gallery-card canvas { width: 64px; height: 64px; display: block; }
+.gallery-card span { font-size: 10px; font-weight: 700; margin-top: 6px; text-transform: capitalize; color: var(--fg); opacity: 0.9; }
 </style>
 </head>
 <body>
@@ -141,11 +163,11 @@ const CFG = {
   cell: 56, maxEnemyR: 44
 };
 
-/* ALL AVAILABLE SHAPES (34 Total) */
+/* ALL AVAILABLE SHAPES (30 Total) */
 const ALL_SHAPES = [
-  0, 3, 4, 5, 6, 7, 8, 'star', 'cross', 'trapezoid', 'leaf', 'house', 'arrow', 'trefoil', 'ghost',
+  0, 3, 4, 5, 6, 7, 8, 'star', 'cross', 'trapezoid', 'house', 'arrow', 'ghost',
   'diamond', 'crescent', 'heart', 'shield', 'drop', 'hourglass', 'clover', 'gear', 'capsule',
-  'infinity', 'spade', 'club', 'kite', 'flower', 'star4', 'star6', 'astroid', 'blade', 'ring'
+  'infinity', 'spade', 'club', 'flower', 'star4', 'star6', 'astroid', 'ring'
 ];
 
 /* ============ ENEMIES ============ */
@@ -155,7 +177,7 @@ const ENEMIES = {
   dart:    { sides: 'arrow', r: 7,  hp: 6,   spd: 130, dmg: 7,  xp: 2,  col: '--e4', from: 120, w: 3,  spin: 0 },
   weave:   { sides: 'trapezoid', r: 10, hp: 9,   spd: 70,  dmg: 7,  xp: 2,  col: '--e1', from: 80,  w: 4,  spin: 0, move: 'zig' },
   lunge:   { sides: 'cross', r: 11, hp: 16,  spd: 65,  dmg: 14, xp: 3,  col: '--e5', from: 150, w: 3,  spin: 0, move: 'dash' },
-  flit:    { sides: 'leaf', r: 8,  hp: 7,   spd: 85,  dmg: 6,  xp: 2,  col: '--e4', from: 100, w: 4,  spin: 0, move: 'flit' },
+  flit:    { sides: 'drop', r: 8,  hp: 7,   spd: 85,  dmg: 6,  xp: 2,  col: '--e4', from: 100, w: 4,  spin: 0, move: 'flit' },
   hex:     { sides: 6, r: 18, hp: 60,  spd: 38,  dmg: 14, xp: 6,  col: '--e3', from: 200, w: 2,  spin: -.8 },
   orbiter: { sides: 'capsule', r: 8,  hp: 8,   spd: 95,  dmg: 6,  xp: 2,  col: '--e3', from: 180, w: 3,  spin: 2,  move: 'circle' },
   hopper:  { sides: 'house', r: 11, hp: 20,  spd: 70,  dmg: 9,  xp: 3,  col: '--e2', from: 240, w: 3,  spin: 0,  move: 'hop' },
@@ -201,7 +223,7 @@ const WEAPONS = {
   windmill: { name: 'Windmill', max: 7, sym: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 12L12 2M12 12L20 17M12 12L4 17"/><path d="M12 2L16 6M20 17L16 21M4 17L8 13"/></svg>', desc: 'Three rotating katana blades slice through all enemies in their path.',
     tick(w, dt) {
       w.a = (w.a || 0) + dt * (3.2 + 0.35 * w.lv);
-      const n = 3, R = 110 + 15 * w.lv, bw = 12 + 2 * w.lv;
+      const n = 3, R = 55 + 7.5 * w.lv, bw = 12 + 2 * w.lv;
       if ((w.t = (w.t || 0) - dt) <= 0) {
         w.t = 0.12;
         query(pl.x, pl.y, R, e => {
@@ -686,7 +708,36 @@ function hide() { ov.style.display = 'none'; }
 function menu() {
   state = 'menu';
   ov.classList.add('title-mode');
-  show('<h1>Bad Vibe Survivor</h1><button class="go" data-act="start">BEGIN</button>');
+  show('<h1>Bad Vibe Survivor</h1><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;"><button class="go" data-act="start">BEGIN</button><button class="go" data-act="gallery" style="background:var(--card);color:var(--fg);border:1px solid var(--obstacle);">SHAPES</button></div>');
+}
+
+function showGallery() {
+  state = 'gallery';
+  ov.classList.remove('title-mode');
+  const items = ALL_SHAPES.map((s, i) => {
+    const label = typeof s === 'number' ? (s === 0 ? 'Circle' : s + '-Gon') : s;
+    return `<div class="gallery-card"><canvas class="shape-preview" width="64" height="64" data-shape="${s}"></canvas><span>#${i+1} ${label}</span></div>`;
+  }).join('');
+  show(`<div style="display:flex;justify-content:space-between;align-items:center;"><h2>Shape Pool (30 Shapes)</h2><button class="go" data-act="menu" style="padding:6px 18px;font-size:0.95rem;">Back</button></div><div class="gallery-grid">${items}</div>`);
+}
+
+function renderGalleryPreviews() {
+  const elems = document.querySelectorAll('.shape-preview');
+  if (!elems.length) return;
+  elems.forEach(canvas => {
+    const s = canvas.dataset.shape;
+    const shapeVal = isNaN(s) ? s : +s;
+    const cCtx = canvas.getContext('2d');
+    cCtx.clearRect(0, 0, 64, 64);
+    cCtx.fillStyle = C['--player'] || '#3b82f6';
+    cCtx.strokeStyle = C['--fg'] || '#e8e8e8';
+    cCtx.lineWidth = 1.5;
+    cCtx.save();
+    polyPath(32, 32, 20, shapeVal, t * 1.2, cCtx);
+    cCtx.fill();
+    cCtx.stroke();
+    cCtx.restore();
+  });
 }
 
 function end() {
@@ -900,159 +951,142 @@ function update(dt) {
 }
 
 /* ============ DRAW ============ */
-function polyPath(x, y, r, n, rot) {
-  ctx.beginPath();
+function polyPath(x, y, r, n, rot, c = ctx) {
+  c.beginPath();
   if (!n || n === 'circle') {
-    ctx.arc(x, y, r, 0, TAU);
+    c.arc(x, y, r, 0, TAU);
   } else if (typeof n === 'number') {
     for (let i = 0; i < n; i++) {
       const a = rot + i * TAU / n, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'boom') {
-    ctx.moveTo(x + Math.cos(rot)*r, y + Math.sin(rot)*r);
-    ctx.lineTo(x + Math.cos(rot + 2.2)*r, y + Math.sin(rot + 2.2)*r);
-    ctx.lineTo(x + Math.cos(rot + Math.PI)*r*0.2, y + Math.sin(rot + Math.PI)*r*0.2);
-    ctx.lineTo(x + Math.cos(rot - 2.2)*r, y + Math.sin(rot - 2.2)*r);
-    ctx.closePath();
+    c.moveTo(x + Math.cos(rot)*r, y + Math.sin(rot)*r);
+    c.lineTo(x + Math.cos(rot + 2.2)*r, y + Math.sin(rot + 2.2)*r);
+    c.lineTo(x + Math.cos(rot + Math.PI)*r*0.2, y + Math.sin(rot + Math.PI)*r*0.2);
+    c.lineTo(x + Math.cos(rot - 2.2)*r, y + Math.sin(rot - 2.2)*r);
+    c.closePath();
   } else if (n === 'star') {
     for (let i = 0; i < 10; i++) {
       const a = rot + i * Math.PI / 5, sr = (i % 2 === 0) ? r : r * 0.42;
       const px = x + Math.cos(a) * sr, py = y + Math.sin(a) * sr;
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'cross') {
     const w = r * 0.35;
     const pts = [[r, w], [w, w], [w, r], [-w, r], [-w, w], [-r, w], [-r, -w], [-w, -w], [-w, -r], [w, -r], [w, -w], [r, -w]];
     const cos = Math.cos(rot), sin = Math.sin(rot);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'trapezoid') {
     const rCW = rot + Math.PI / 2;
     const pts = [[r * 0.5, -r * 0.8], [r, r * 0.8], [-r, r * 0.8], [-r * 0.5, -r * 0.8]];
     const cos = Math.cos(rCW), sin = Math.sin(rCW);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
-  } else if (n === 'leaf') {
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    const t1x = x + r * cos, t1y = y + r * sin;
-    const t2x = x - r * cos, t2y = y - r * sin;
-    const c1x = x - r * 0.75 * sin, c1y = y + r * 0.75 * cos;
-    const c2x = x + r * 0.75 * sin, c2y = y - r * 0.75 * cos;
-    ctx.moveTo(t1x, t1y);
-    ctx.quadraticCurveTo(c1x, c1y, t2x, t2y);
-    ctx.quadraticCurveTo(c2x, c2y, t1x, t1y);
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'house') {
     const rCW = rot + Math.PI / 2;
     const pts = [[0, -r], [r * 0.85, -r * 0.1], [r * 0.7, r * 0.85], [-r * 0.7, r * 0.85], [-r * 0.85, -r * 0.1]];
     const cos = Math.cos(rCW), sin = Math.sin(rCW);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'arrow') {
     const pts = [[r * 1.1, 0], [-r * 0.7, r * 0.7], [-r * 0.3, 0], [-r * 0.7, -r * 0.7]];
     const cos = Math.cos(rot), sin = Math.sin(rot);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
-  } else if (n === 'trefoil') {
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    for (let i = 0; i <= 48; i++) {
-      const a = (i / 48) * TAU, tr = r * (0.55 + 0.45 * Math.cos(3 * a)), px = tr * Math.cos(a), py = tr * Math.sin(a);
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
-    }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'ghost') {
     const rCW = rot + Math.PI / 2;
     const cos = Math.cos(rCW), sin = Math.sin(rCW);
     const tr = (px, py) => [x + px * cos - py * sin, y + px * sin + py * cos];
-    const [p0x, p0y] = tr(-r * 0.8, 0); ctx.moveTo(p0x, p0y);
+    const [p0x, p0y] = tr(-r * 0.8, 0); c.moveTo(p0x, p0y);
     const [c1x, c1y] = tr(-r * 0.8, -r * 1.1), [c2x, c2y] = tr(r * 0.8, -r * 1.1), [p1x, p1y] = tr(r * 0.8, 0);
-    ctx.bezierCurveTo(c1x, c1y, c2x, c2y, p1x, p1y);
+    c.bezierCurveTo(c1x, c1y, c2x, c2y, p1x, p1y);
     const skirt = [[r * 0.8, r * 0.8], [r * 0.4, r * 0.4], [0, r * 0.8], [-r * 0.4, r * 0.4], [-r * 0.8, r * 0.8]];
-    skirt.forEach(([px, py]) => { const [rx, ry] = tr(px, py); ctx.lineTo(rx, ry); });
-    ctx.closePath();
+    skirt.forEach(([px, py]) => { const [rx, ry] = tr(px, py); c.lineTo(rx, ry); });
+    c.closePath();
   } else if (n === 'diamond') {
+    const rotCW = rot + Math.PI / 2;
     const pts = [[0, -r * 1.25], [r * 0.75, 0], [0, r * 1.25], [-r * 0.75, 0]];
-    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const cos = Math.cos(rotCW), sin = Math.sin(rotCW);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'crescent') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
-    for (let i = 0; i <= 24; i++) {
-      const a = -Math.PI / 2 + (i / 24) * Math.PI;
-      const px = Math.cos(a) * r, py = Math.sin(a) * r;
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
-    }
-    for (let i = 24; i >= 0; i--) {
-      const a = -Math.PI / 2 + (i / 24) * Math.PI;
-      const px = Math.cos(a) * r * 0.2 + r * 0.65, py = Math.sin(a) * r * 0.95;
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      ctx.lineTo(rx, ry);
-    }
-    ctx.closePath();
+    const tr = (px, py) => [x + px * cos - py * sin, y + px * sin + py * cos];
+    const [p0x, p0y] = tr(0, -r * 1.1);
+    const [c1x, c1y] = tr(r * 1.3, 0);
+    const [p1x, p1y] = tr(0, r * 1.1);
+    const [c2x, c2y] = tr(r * 0.45, 0);
+    c.moveTo(p0x, p0y);
+    c.quadraticCurveTo(c1x, c1y, p1x, p1y);
+    c.quadraticCurveTo(c2x, c2y, p0x, p0y);
+    c.closePath();
   } else if (n === 'heart') {
-    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const rotCW = rot + Math.PI / 2;
+    const cos = Math.cos(rotCW), sin = Math.sin(rotCW);
     for (let i = 0; i <= 36; i++) {
       const a = (i / 36) * TAU;
       const px = r * 0.8 * Math.sin(a) ** 3;
       const py = -r * 0.7 * (13 * Math.cos(a) - 5 * Math.cos(2*a) - 2 * Math.cos(3*a) - Math.cos(4*a)) / 16;
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'shield') {
+    const rotCW = rot + Math.PI / 2;
     const pts = [[0, -r], [r * 0.85, -r * 0.85], [r * 0.85, 0], [0, r * 1.1], [-r * 0.85, 0], [-r * 0.85, -r * 0.85]];
-    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const cos = Math.cos(rotCW), sin = Math.sin(rotCW);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'drop') {
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    for (let i = 0; i <= 36; i++) {
-      const a = (i / 36) * TAU;
-      const dr = r * (0.6 + 0.4 * Math.sin(a / 2));
-      const px = dr * Math.sin(a), py = -dr * Math.cos(a);
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
-    }
-    ctx.closePath();
+    const rotCCW = rot - Math.PI / 2;
+    const cos = Math.cos(rotCCW), sin = Math.sin(rotCCW);
+    const tr = (px, py) => [x + px * cos - py * sin, y + px * sin + py * cos];
+    const [tX, tY] = tr(0, -r * 1.15);
+    const [bX, bY] = tr(0, r * 0.95);
+    const [rcX, rcY] = tr(r * 1.1, r * 0.3);
+    const [lcX, lcY] = tr(-r * 1.1, r * 0.3);
+    c.moveTo(tX, tY);
+    c.quadraticCurveTo(rcX, rcY, bX, bY);
+    c.quadraticCurveTo(lcX, lcY, tX, tY);
+    c.closePath();
   } else if (n === 'hourglass') {
     const pts = [[-r * 0.75, -r * 0.95], [r * 0.75, -r * 0.95], [-r * 0.15, 0], [r * 0.75, r * 0.95], [-r * 0.75, r * 0.95], [r * 0.15, 0]];
     const cos = Math.cos(rot), sin = Math.sin(rot);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'clover') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     for (let i = 0; i <= 48; i++) {
       const a = (i / 48) * TAU, cr = r * (0.6 + 0.4 * Math.abs(Math.sin(2 * a))), px = cr * Math.cos(a), py = cr * Math.sin(a);
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'gear') {
     const teeth = 8;
     const cos = Math.cos(rot), sin = Math.sin(rot);
@@ -1061,9 +1095,9 @@ function polyPath(x, y, r, n, rot) {
       const gr = (i % 2 === 0) ? r * 1.1 : r * 0.7;
       const px = gr * Math.cos(a), py = gr * Math.sin(a);
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'capsule') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     const w = r * 1.1, h = r * 0.55;
@@ -1078,9 +1112,9 @@ function polyPath(x, y, r, n, rot) {
     }
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'infinity') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     for (let i = 0; i <= 36; i++) {
@@ -1089,24 +1123,29 @@ function polyPath(x, y, r, n, rot) {
       const px = (r * 1.2 * Math.cos(a)) / denom;
       const py = (r * 1.2 * Math.sin(a) * Math.cos(a)) / denom;
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'spade') {
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    for (let i = 0; i <= 36; i++) {
-      const a = (i / 36) * TAU;
-      const px = r * 0.85 * Math.sin(a) * Math.cos(a);
-      const py = -r * 0.9 * Math.cos(a) * (1 - Math.sin(a));
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
-    }
-    const stem = [[-r*0.15, r*0.3], [r*0.15, r*0.3], [r*0.3, r*0.9], [-r*0.3, r*0.9]];
-    stem.forEach(([px, py]) => {
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      ctx.lineTo(rx, ry);
-    });
-    ctx.closePath();
+    const rotCW = rot + Math.PI / 2;
+    const cos = Math.cos(rotCW), sin = Math.sin(rotCW);
+    const tr = (px, py) => [x + px * cos - py * sin, y + px * sin + py * cos];
+    const [tX, tY] = tr(0, -r * 1.15);
+    c.moveTo(tX, tY);
+    const [c1x, c1y] = tr(r * 1.1, -r * 0.5);
+    const [c2x, c2y] = tr(r * 1.1, r * 0.4);
+    const [n1x, n1y] = tr(r * 0.12, r * 0.35);
+    c.bezierCurveTo(c1x, c1y, c2x, c2y, n1x, n1y);
+    const [s1x, s1y] = tr(r * 0.3, r * 0.95);
+    const [s2x, s2y] = tr(-r * 0.3, r * 0.95);
+    const [n2x, n2y] = tr(-r * 0.12, r * 0.35);
+    c.lineTo(s1x, s1y);
+    c.lineTo(s2x, s2y);
+    c.lineTo(n2x, n2y);
+    const [c3x, c3y] = tr(-r * 1.1, r * 0.4);
+    const [c4x, c4y] = tr(-r * 1.1, -r * 0.5);
+    c.bezierCurveTo(c3x, c3y, c4x, c4y, tX, tY);
+    c.closePath();
   } else if (n === 'club') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     for (let i = 0; i <= 48; i++) {
@@ -1114,60 +1153,52 @@ function polyPath(x, y, r, n, rot) {
       const cr = r * (0.5 + 0.35 * Math.cos(3 * a));
       const px = cr * Math.cos(a), py = cr * Math.sin(a);
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
-  } else if (n === 'kite') {
-    const pts = [[0, -r * 1.2], [r * 0.7, -r * 0.2], [0, r * 1.1], [-r * 0.7, -r * 0.2]];
-    const cos = Math.cos(rot), sin = Math.sin(rot);
-    pts.forEach(([px, py], i) => {
-      const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
-    });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'flower') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     for (let i = 0; i <= 60; i++) {
       const a = (i / 60) * TAU, fr = r * (0.55 + 0.45 * Math.abs(Math.sin(2.5 * a))), px = fr * Math.cos(a), py = fr * Math.sin(a);
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'star4') {
     for (let i = 0; i < 8; i++) {
       const a = rot + i * Math.PI / 4, sr = (i % 2 === 0) ? r * 1.15 : r * 0.3;
       const px = x + Math.cos(a) * sr, py = y + Math.sin(a) * sr;
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'star6') {
     for (let i = 0; i < 12; i++) {
       const a = rot + i * Math.PI / 6, sr = (i % 2 === 0) ? r : r * 0.5;
       const px = x + Math.cos(a) * sr, py = y + Math.sin(a) * sr;
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      i ? c.lineTo(px, py) : c.moveTo(px, py);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'astroid') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     for (let i = 0; i <= 36; i++) {
       const a = (i / 36) * TAU;
       const px = r * (Math.cos(a) ** 3), py = r * (Math.sin(a) ** 3);
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     }
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'blade') {
     const cos = Math.cos(rot), sin = Math.sin(rot);
     const pts = [[r * 1.2, 0], [0, r * 0.6], [-r * 0.8, 0], [0, -r * 0.2]];
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
-      i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
+      i ? c.lineTo(rx, ry) : c.moveTo(rx, ry);
     });
-    ctx.closePath();
+    c.closePath();
   } else if (n === 'ring') {
-    ctx.arc(x, y, r, 0, TAU, false);
-    ctx.arc(x, y, r * 0.5, 0, TAU, true);
-    ctx.closePath();
+    c.arc(x, y, r, 0, TAU, false);
+    c.arc(x, y, r * 0.5, 0, TAU, true);
+    c.closePath();
   }
 }
 
@@ -1244,7 +1275,7 @@ function draw() {
   // Render Windmill Katana Blades
   if (pl.ws.windmill) {
     const wm = pl.ws.windmill;
-    const n = 3, R = 110 + 15 * wm.lv, bw = 12 + 2 * wm.lv;
+    const n = 3, R = 55 + 7.5 * wm.lv, bw = 12 + 2 * wm.lv;
     for (let i = 0; i < n; i++) {
       const a = wm.a + i * TAU / n;
       ctx.save();
@@ -1337,6 +1368,7 @@ ov.addEventListener('click', e => {
   if (b.dataset.i !== undefined) choose(+b.dataset.i); 
   else if (b.dataset.act === 'restart' || b.dataset.act === 'start') start();
   else if (b.dataset.act === 'resume') togglePause(); 
+  else if (b.dataset.act === 'gallery') showGallery();
   else menu();
 });
 
@@ -1344,6 +1376,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now;
   if (state === 'play') update(dt);
+  else if (state === 'gallery') renderGalleryPreviews();
   draw(); requestAnimationFrame(frame);
 }
 resize(); readColors(); menu(); requestAnimationFrame(frame);
