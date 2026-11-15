@@ -253,7 +253,6 @@ const WEAPONS = {
       w.a = (w.a || 0) + dt * (0.8 + 0.1 * w.lv);
       const r = 130 + 25 * w.lv;
       const bw = 10 + 2.5 * w.lv;
-      blades.push({ x: pl.x, y: pl.y, a: w.a, r, bw, life: 0.06, max: 0.06, col: '--shot' });
       if ((w.t -= dt) <= 0) {
         w.t = 0.12;
         const dxLine = Math.cos(w.a) * r, dyLine = Math.sin(w.a) * r;
@@ -452,7 +451,7 @@ function applyPalette() {
 
 /* ============ STATE ============ */
 let W, H, dpr, state = 'menu', t = 0, kills = 0, acc = 0, nid = 0, nextBoss = 0, best = 0, opts = [], stick = null;
-let pl, P, enemies = [], projs = [], gems = [], parts = [], rings = [], orbs = [], blasts = [], zones = [], slashes = [], zaps = [], minesArr = [], blades = [];
+let pl, P, enemies = [], projs = [], gems = [], parts = [], rings = [], orbs = [], blasts = [], zones = [], slashes = [], zaps = [], minesArr = [];
 let stageType = 0; 
 const grid = new Map(), K = {};
 try { best = +localStorage.getItem('ss-best') || 0; } catch (e) {}
@@ -662,10 +661,18 @@ function start() {
   stageType = Math.floor(Math.random() * 9);
   chunks.clear(); grid.clear();
   t = 0; kills = 0; acc = 0; nid = 0; nextBoss = CFG.spawn.bossEvery;
-  enemies = []; projs = []; gems = []; parts = []; rings = []; orbs = []; blasts = []; zones = []; slashes = []; zaps = []; minesArr = []; blades = [];
+  enemies = []; projs = []; gems = []; parts = []; rings = []; orbs = []; blasts = []; zones = []; slashes = []; zaps = []; minesArr = [];
   
-  const shapes = [0, 3, 4, 5, 6, 'star', 'cross', 'trapezoid', 'leaf', 'house', 'arrow', 'trefoil', 'ghost', 'egg'];
+  const shapes = [0, 3, 4, 5, 6, 7, 8, 'star', 'cross', 'trapezoid', 'leaf', 'house', 'arrow', 'trefoil', 'ghost', 'egg'];
   const pShape = shapes[Math.floor(Math.random() * shapes.length)];
+  
+  // Randomize enemy shapes each run from the available shape pool
+  const enemyShapes = [3, 4, 5, 6, 7, 8, 'star', 'cross', 'trapezoid', 'leaf', 'house', 'arrow', 'trefoil', 'ghost', 'egg'];
+  const shuffledEnemyShapes = [...enemyShapes].sort(() => Math.random() - 0.5);
+  let shapeIdx = 0;
+  for (const k in ENEMIES) {
+    ENEMIES[k].sides = shuffledEnemyShapes[shapeIdx++ % shuffledEnemyShapes.length];
+  }
   
   pl = { x: 0, y: 0, hp: CFG.player.hp, xp: 0, level: 1, iv: 0, lv: {}, ws: {}, sides: pShape, face: 0, moving: false };
   P = { maxHp: CFG.player.hp, speed: CFG.player.speed, magnet: CFG.player.magnet, dmg: 1, cd: 1, regen: 0 };
@@ -728,10 +735,6 @@ function update(dt) {
 
   orbs.length = 0;
   for (const k in pl.ws) WEAPONS[k].tick(pl.ws[k], dt);
-
-  for (let i = blades.length - 1; i >= 0; i--) {
-    if ((blades[i].life -= dt) <= 0) blades.splice(i, 1);
-  }
 
   for (let i = rings.length - 1; i >= 0; i--) {
     const g = rings[i]; g.x = pl.x; g.y = pl.y; g.r += 360 * dt;
@@ -901,8 +904,9 @@ function polyPath(x, y, r, n, rot) {
     ctx.quadraticCurveTo(c2x, c2y, t1x, t1y);
     ctx.closePath();
   } else if (n === 'house') {
+    const rCW = rot + Math.PI / 2;
     const pts = [[0, -r], [r * 0.85, -r * 0.1], [r * 0.7, r * 0.85], [-r * 0.7, r * 0.85], [-r * 0.85, -r * 0.1]];
-    const cos = Math.cos(rot), sin = Math.sin(rot);
+    const cos = Math.cos(rCW), sin = Math.sin(rCW);
     pts.forEach(([px, py], i) => {
       const rx = x + px * cos - py * sin, ry = y + px * sin + py * cos;
       i ? ctx.lineTo(rx, ry) : ctx.moveTo(rx, ry);
@@ -1015,30 +1019,29 @@ function draw() {
     poly(pl.x, pl.y, 65 + 15 * pl.ws.aura.lv, 0);
   }
   
-  // Render Death Katana Blade
-  for (const b of blades) {
+  // Render Death Katana Blade as a single layer
+  if (pl.ws.beam) {
+    const wb = pl.ws.beam;
+    const r = 130 + 25 * wb.lv;
+    const bw = 10 + 2.5 * wb.lv;
     ctx.save();
-    ctx.translate(b.x, b.y);
-    ctx.rotate(b.a);
+    ctx.translate(pl.x, pl.y);
+    ctx.rotate(wb.a);
     ctx.globalAlpha = 0.45;
-    ctx.fillStyle = C[b.col];
+    ctx.fillStyle = C['--shot'];
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1.5;
     
-    // Katana Blade: sharp kissaki tip at the end
+    // Katana Blade: sharp kissaki tip at the end (ethereal blade with no hilt)
     ctx.beginPath();
-    ctx.moveTo(0, -b.bw * 0.5);
-    ctx.quadraticCurveTo(b.r * 0.7, -b.bw * 0.4, b.r, 0);
-    ctx.lineTo(b.r * 0.88, b.bw * 0.5);
-    ctx.quadraticCurveTo(b.r * 0.4, b.bw * 0.5, 0, b.bw * 0.5);
+    ctx.moveTo(0, -bw * 0.5);
+    ctx.quadraticCurveTo(r * 0.7, -bw * 0.4, r, 0);
+    ctx.lineTo(r * 0.88, bw * 0.5);
+    ctx.quadraticCurveTo(r * 0.4, bw * 0.5, 0, bw * 0.5);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
 
-    // Katana Tsuba guard
-    ctx.globalAlpha = 0.75;
-    ctx.fillStyle = C['--fg'];
-    ctx.fillRect(-2, -b.bw * 0.8, 5, b.bw * 1.6);
     ctx.restore();
   }
   ctx.globalAlpha = 1;
